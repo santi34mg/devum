@@ -8,68 +8,75 @@ import {
   Share2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import type { Post } from "@/components/feed/types";
+import type { Tables } from "@/types/supabase";
+import { supabase } from "@/config/supabase";
 
-// Temporary mock data - should be moved to a proper data store or API
-const mockPosts = [
+type Post = Tables<"Posts">;
+type Project = Tables<"Proyect">;
+
+// Mock data for when database is empty
+const mockProjects: Project[] = [
   {
     id: 1,
-    author: {
-      name: "Sarah Chen",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-      title: "Software Engineer at Google",
-    },
-    content:
-      "Excited to announce that we're hiring interns for Summer 2024! Looking for talented students passionate about machine learning and cloud computing. DM me if interested! 🚀",
-    image:
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=400&fit=crop",
-    likes: 142,
-    timestamp: "2 hours ago",
+    title: "Machine Learning Research Assistant",
+    general_description:
+      "Join our team to work on cutting-edge machine learning projects focusing on natural language processing and computer vision.",
+    requirements_description:
+      "Strong background in Python, TensorFlow/PyTorch, and linear algebra. Experience with ML research papers is a plus.",
+    published_by: "Dr. Sarah Chen",
+    deadline: "2024-12-31",
+    created_at: "2024-01-01T12:00:00Z",
   },
   {
     id: 2,
-    author: {
-      name: "Michael Rodriguez",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-      title: "Recruiting Manager at Microsoft",
-    },
-    content:
-      "Just wrapped up an amazing career fair at UMich! Met so many brilliant students. Remember: your passion and willingness to learn matter more than having every skill on the job description. Keep applying! 💪",
-    likes: 89,
-    timestamp: "5 hours ago",
+    title: "Web Development Internship",
+    general_description:
+      "Work with our development team to build modern web applications using React and Node.js.",
+    requirements_description:
+      "Proficiency in JavaScript, React, and REST APIs. Knowledge of TypeScript is preferred.",
+    published_by: "Tech Innovations Inc.",
+    deadline: "2024-11-15",
+    created_at: "2024-01-01T12:00:00Z",
   },
   {
     id: 3,
-    author: {
-      name: "Emily Watson",
-      avatar:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-      title: "Product Designer at Airbnb",
-    },
-    content:
-      "Design tip for students building portfolios: Show your process, not just the final product. Recruiters want to see how you think and solve problems. Include sketches, iterations, and the reasoning behind your decisions.",
-    image:
-      "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&h=400&fit=crop",
-    likes: 203,
-    timestamp: "1 day ago",
+    title: "Data Science Project",
+    general_description:
+      "Analyze large datasets and create predictive models for business intelligence applications.",
+    requirements_description:
+      "Strong skills in Python, pandas, scikit-learn, and SQL. Experience with data visualization tools.",
+    published_by: "Analytics Corp",
+    deadline: "2025-01-20",
+    created_at: "2024-01-01T12:00:00Z",
+  },
+];
+
+const mockPosts: Post[] = [
+  {
+    id: 1,
+    post_title: "Exciting ML Research Opportunity!",
+    post_caption:
+      "We're looking for talented students to join our machine learning research team. This is a great opportunity to work on real-world AI problems and publish your work. Perfect for students interested in NLP and computer vision!",
+    project_id: 1,
+    created_at: "2024-01-01T12:00:00Z",
   },
   {
-    id: 4,
-    author: {
-      name: "David Kim",
-      avatar:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-      title: "Startup Founder",
-    },
-    content:
-      "Our early-stage startup is looking for a founding engineer intern! You'll work directly with the founding team, ship features to production, and get real equity. Perfect opportunity for someone who wants to experience startup life. 🚀",
-    likes: 67,
-    timestamp: "2 days ago",
+    id: 2,
+    post_title: "Join Our Web Dev Team",
+    post_caption:
+      "Looking for passionate developers to help build the next generation of web applications. You'll work with modern technologies and learn from experienced engineers.",
+    project_id: 2,
+    created_at: "2024-01-02T15:30:00Z",
+  },
+  {
+    id: 3,
+    post_title: "Data Science Internship Available",
+    post_caption:
+      "Great opportunity for students interested in data science and analytics. Work with real business data and create impactful insights.",
+    project_id: 3,
+    created_at: "2024-01-03T09:45:00Z",
   },
 ];
 
@@ -77,31 +84,91 @@ export default function PostDetail() {
   const navigate = useNavigate();
   const { postId } = useParams();
   const [post, setPost] = useState<Post | null>(null);
+  const [project, setProject] = useState<Project | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [likes, setLikes] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadPost = () => {
+    const loadPostAndProject = async () => {
       setIsLoading(true);
       try {
-        const foundPost = mockPosts.find((p) => p.id === Number(postId));
-        if (foundPost) {
-          setPost(foundPost);
-          setLikes(foundPost.likes);
+        // Fetch post
+        const { data: postData, error: postError } = await supabase
+          .from("Posts")
+          .select("*")
+          .eq("id", Number(postId))
+          .single();
+
+        let currentPost: Post | null = null;
+        let currentProject: Project | null = null;
+
+        if (postError || !postData) {
+          // Use mock data if post not found
+          console.log("Post not found in database, using mock data");
+          currentPost = mockPosts.find((p) => p.id === Number(postId)) || null;
+
+          if (currentPost) {
+            currentProject =
+              mockProjects.find((p) => p.id === currentPost!.project_id) ||
+              null;
+          }
+        } else {
+          currentPost = postData;
+
+          // Fetch related project
+          const { data: projectData, error: projectError } = await supabase
+            .from("Proyect")
+            .select("*")
+            .eq("id", postData.project_id)
+            .single();
+
+          if (projectError || !projectData) {
+            // Use mock project if not found
+            console.log("Project not found in database, using mock data");
+            currentProject =
+              mockProjects.find((p) => p.id === postData.project_id) || null;
+          } else {
+            currentProject = projectData;
+          }
+
+          // Fetch like count
+          const { count } = await supabase
+            .from("StudentLikesPost")
+            .select("*", { count: "exact", head: true })
+            .eq("post_id", postData.id);
+
+          if (count !== null) {
+            setLikes(count);
+          }
+        }
+
+        if (currentPost) {
+          setPost(currentPost);
+          setProject(currentProject);
         } else {
           navigate("/");
         }
       } catch (error) {
         console.error("Error loading post:", error);
-        navigate("/");
+        // Fallback to mock data on error
+        const currentPost =
+          mockPosts.find((p) => p.id === Number(postId)) || null;
+        if (currentPost) {
+          setPost(currentPost);
+          setProject(
+            mockProjects.find((p) => p.id === currentPost.project_id) || null
+          );
+        } else {
+          navigate("/");
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadPost();
+    loadPostAndProject();
   }, [postId, navigate]);
 
   const handleLike = () => {
@@ -109,7 +176,7 @@ export default function PostDetail() {
     setLikes(isLiked ? likes - 1 : likes + 1);
   };
 
-  if (isLoading || !post) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
@@ -120,7 +187,7 @@ export default function PostDetail() {
   if (!post) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Loading...</p>
+        <p className="text-muted-foreground">Post not found</p>
       </div>
     );
   }
@@ -138,27 +205,22 @@ export default function PostDetail() {
       </header>
 
       {/* Main Content */}
-      <main className="container max-w-3xl py-6">
-        <Card className="border-none shadow-none">
-          {/* Author Info */}
+      <main className="max-w py-6 flex items-center justify-center min-h-[calc(100vh-4rem)]">
+        <Card className="border-none shadow-none w-full">
+          {/* Post Header */}
           <CardHeader className="pb-3">
             <div className="flex items-start gap-4">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={post.author.avatar} alt={post.author.name} />
-                <AvatarFallback>
-                  {post.author.name
-                    .split(" ")
-                    .map((n: string) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
               <div className="flex-1">
-                <h2 className="text-lg font-semibold">{post.author.name}</h2>
-                <p className="text-sm text-muted-foreground">
-                  {post.author.title}
-                </p>
+                <h2 className="text-xl font-bold">{post.post_title}</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {post.timestamp}
+                  Posted on{" "}
+                  {new Date(post.created_at).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </p>
               </div>
             </div>
@@ -167,17 +229,51 @@ export default function PostDetail() {
           <CardContent className="space-y-6">
             {/* Post Content */}
             <div className="space-y-4">
-              <p className="text-base leading-relaxed">{post.content}</p>
-              {post.image && (
-                <div className="rounded-lg overflow-hidden border">
-                  <img
-                    src={post.image}
-                    alt="Post content"
-                    className="w-full h-auto object-cover"
-                  />
-                </div>
-              )}
+              <p className="text-base leading-relaxed">{post.post_caption}</p>
             </div>
+
+            {/* Project Information */}
+            {project && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <h3 className="text-lg font-semibold">Related Project</h3>
+                  <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                    <h4 className="font-semibold text-base">{project.title}</h4>
+                    {project.general_description && (
+                      <p className="text-sm text-muted-foreground">
+                        {project.general_description}
+                      </p>
+                    )}
+                    {project.requirements_description && (
+                      <div className="mt-2">
+                        <p className="text-sm font-medium">Requirements:</p>
+                        <p className="text-sm text-muted-foreground">
+                          {project.requirements_description}
+                        </p>
+                      </div>
+                    )}
+                    {project.deadline && (
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium">Deadline:</span>{" "}
+                        {new Date(project.deadline).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium">Published by:</span>{" "}
+                      {project.published_by}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
 
             <Separator />
 

@@ -1,5 +1,6 @@
 import { Settings, Moon, Sun, LogIn, User } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,12 +10,15 @@ import {
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 export function ProfileMenu() {
+  const navigate = useNavigate();
   const [theme, setTheme] = useState<"light" | "dark">("light");
+
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
     document.documentElement.classList.toggle("dark");
   };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -29,11 +33,11 @@ export function ProfileMenu() {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="right" align="start" className="w-56">
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate("/profile")}>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate("/settings")}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
@@ -52,7 +56,7 @@ export function ProfileMenu() {
           )}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate("/login")}>
           <LogIn className="mr-2 h-4 w-4" />
           <span>Log in</span>
         </DropdownMenuItem>
