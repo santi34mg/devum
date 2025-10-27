@@ -1,12 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  Heart,
-  Bookmark,
-  MessageCircle,
-  Share2,
-} from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -85,9 +79,6 @@ export default function PostDetail() {
   const { postId } = useParams();
   const [post, setPost] = useState<Post | null>(null);
   const [project, setProject] = useState<Project | null>(null);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [likes, setLikes] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -132,16 +123,6 @@ export default function PostDetail() {
           } else {
             currentProject = projectData;
           }
-
-          // Fetch like count
-          const { count } = await supabase
-            .from("StudentLikesPost")
-            .select("*", { count: "exact", head: true })
-            .eq("post_id", postData.id);
-
-          if (count !== null) {
-            setLikes(count);
-          }
         }
 
         if (currentPost) {
@@ -171,11 +152,6 @@ export default function PostDetail() {
     loadPostAndProject();
   }, [postId, navigate]);
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikes(isLiked ? likes - 1 : likes + 1);
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -193,144 +169,102 @@ export default function PostDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container h-16 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-semibold">Post</h1>
-        </div>
-      </header>
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <Card className="w-1/2 p-0 m-4">
+        {/* Header */}
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container h-16 flex items-center gap-4 p-2">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold">Post</h1>
+          </div>
+        </header>
 
-      {/* Main Content */}
-      <main className="max-w py-6 flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <Card className="border-none shadow-none w-full">
-          {/* Post Header */}
-          <CardHeader className="pb-3">
-            <div className="flex items-start gap-4">
-              <div className="flex-1">
-                <h2 className="text-xl font-bold">{post.post_title}</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Posted on{" "}
-                  {new Date(post.created_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* Post Content */}
-            <div className="space-y-4">
-              <p className="text-base leading-relaxed">{post.post_caption}</p>
-            </div>
-
-            {/* Project Information */}
-            {project && (
-              <>
-                <Separator />
-                <div className="space-y-3">
-                  <h3 className="text-lg font-semibold">Related Project</h3>
-                  <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                    <h4 className="font-semibold text-base">{project.title}</h4>
-                    {project.general_description && (
-                      <p className="text-sm text-muted-foreground">
-                        {project.general_description}
-                      </p>
-                    )}
-                    {project.requirements_description && (
-                      <div className="mt-2">
-                        <p className="text-sm font-medium">Requirements:</p>
-                        <p className="text-sm text-muted-foreground">
-                          {project.requirements_description}
-                        </p>
-                      </div>
-                    )}
-                    {project.deadline && (
-                      <p className="text-sm text-muted-foreground">
-                        <span className="font-medium">Deadline:</span>{" "}
-                        {new Date(project.deadline).toLocaleDateString(
-                          "en-US",
-                          {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          }
-                        )}
-                      </p>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      <span className="font-medium">Published by:</span>{" "}
-                      {project.published_by}
-                    </p>
-                  </div>
+        {/* Main Content */}
+        <main className="flex items-center justify-center">
+          <Card className="border-none shadow-none w-full p-0">
+            {/* Post Header */}
+            <CardHeader className="pb-3">
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold">{post.post_title}</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Posted on{" "}
+                    {new Date(post.created_at).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
                 </div>
-              </>
-            )}
-
-            <Separator />
-
-            {/* Engagement Stats */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <div className="flex items-center gap-6">
-                <span>{likes} likes</span>
-                <span>0 comments</span>
               </div>
-              <span>0 shares</span>
-            </div>
+            </CardHeader>
 
-            <Separator />
-
-            {/* Action Buttons */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={isLiked ? "text-red-500" : ""}
-                  onClick={handleLike}
-                >
-                  <Heart
-                    className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`}
-                  />
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <MessageCircle className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon">
-                  <Share2 className="h-5 w-5" />
-                </Button>
+            <CardContent className="space-y-6">
+              {/* Post Content */}
+              <div className="space-y-4">
+                <p className="text-base leading-relaxed">{post.post_caption}</p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={isSaved ? "text-blue-500" : ""}
-                onClick={() => setIsSaved(!isSaved)}
-              >
-                <Bookmark
-                  className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`}
-                />
-              </Button>
-            </div>
 
-            <Separator />
-
-            {/* Comments Section Placeholder */}
-            <div className="py-4">
-              <p className="text-center text-muted-foreground">
-                No comments yet
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
+              {/* Project Information */}
+              {project && (
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <h3 className="text-lg font-semibold">Related Project</h3>
+                    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                      <h4 className="font-semibold text-base">
+                        {project.title}
+                      </h4>
+                      {project.general_description && (
+                        <p className="text-sm text-muted-foreground">
+                          {project.general_description}
+                        </p>
+                      )}
+                      {project.requirements_description && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium">Requirements:</p>
+                          <p className="text-sm text-muted-foreground">
+                            {project.requirements_description}
+                          </p>
+                        </div>
+                      )}
+                      {project.deadline && (
+                        <p className="text-sm text-muted-foreground">
+                          <span className="font-medium">Deadline:</span>{" "}
+                          {new Date(project.deadline).toLocaleDateString(
+                            "en-US",
+                            {
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )}
+                        </p>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium">Published by:</span>{" "}
+                        {project.published_by}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+            <Button
+              className="m-2"
+              onClick={() => {
+                navigate(`/deliver/${postId}`);
+              }}
+            >
+              Tomar proyecto
+            </Button>
+          </Card>
+        </main>
+      </Card>
     </div>
   );
 }
